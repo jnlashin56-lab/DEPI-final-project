@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cultural_recommender_postgres
+    environment:
+      POSTGRES_DB: cultural_recommender
+      POSTGRES_USER: cultural_user
+      POSTGRES_PASSWORD: cultural_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./database/import_seed.sql:/docker-entrypoint-initdb.d/002_import_seed.sql:ro
+      - ./:/workspace:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cultural_user -d cultural_recommender"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

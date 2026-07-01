@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+psycopg[binary]
+python-dotenv
+sentence-transformers
+numpy
+mcp
+tqdm
