@@ -4,8 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from backend.app.db import pool, get_connection
-from backend.app.schemas import SearchRequest, SearchResponse, HealthResponse, PlaceResult
+from backend.app.schemas import (
+    SearchRequest, SearchResponse, HealthResponse, PlaceResult,
+    RecommendRequest, RecommendationResponse, BookingChatRequest
+)
 from backend.app.retrieval import get_model, get_model_name, search_places
+from backend.app.orchestrator import run_orchestration
+from backend.app.agents.booking_agent import handle_booking_chat
+from backend.app.bookings import dispatch_action
 
 logger = logging.getLogger(__name__)
 
@@ -86,4 +92,24 @@ def search(request: SearchRequest):
         )
     except Exception as e:
         logger.error(f"Search failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/recommend", response_model=RecommendationResponse)
+def recommend_itinerary(request: RecommendRequest):
+    try:
+        # Runs the full agent pipeline
+        response = run_orchestration(request.user_input)
+        return response
+    except Exception as e:
+        logger.error(f"Recommendation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat/booking")
+def chat_booking(request: BookingChatRequest):
+    try:
+        action = handle_booking_chat(request.user_input)
+        result = dispatch_action(action)
+        return {"action_taken": action.model_dump(), "result": result}
+    except Exception as e:
+        logger.error(f"Booking chat failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

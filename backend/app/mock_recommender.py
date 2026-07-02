@@ -10,49 +10,23 @@ from backend.app.schemas import (
     ItineraryStop,
 )
 from backend.app.crowd import estimate_crowd
+from backend.app.retrieval import search_places
 
 
 # ---------------------------------------------------------------------------
-# Fake candidates — stand-in for backend/app/retrieval.py's real output.
-# Matches the exact contract shape you and your teammate agreed on.
+# Real retrieval integration
 # ---------------------------------------------------------------------------
 
-def get_fake_candidates() -> List[Candidate]:
-    return [
-        Candidate(
-            place_id=1,
-            name="Karnak Temple",
-            name_ar="معبد الكرنك",
-            category="historical",
-            category_ar="تاريخي",
-            description="A vast temple complex built over centuries.",
-            description_ar="مجمع معابد ضخم بُني على مدى قرون.",
-            price_egp=450.0,
-            similarity=0.91,
-        ),
-        Candidate(
-            place_id=2,
-            name="Luxor Museum",
-            name_ar="متحف الأقصر",
-            category="museum",
-            category_ar="متحف",
-            description="A quiet museum with well-preserved artifacts.",
-            description_ar="متحف هادئ يضم قطعًا أثرية محفوظة جيدًا.",
-            price_egp=140.0,
-            similarity=0.85,
-        ),
-        Candidate(
-            place_id=3,
-            name="Fraser Tombs",
-            name_ar="مقابر فريزر",
-            category="historical",
-            category_ar="تاريخي",
-            description="Lesser-known tombs, rarely crowded.",
-            description_ar="مقابر أقل شهرة ونادرًا ما تكون مزدحمة.",
-            price_egp=200.0,
-            similarity=0.84,
-        ),
-    ]
+def get_real_candidates(query: str) -> List[Candidate]:
+    results = search_places(query_text=query, limit=30)
+    candidates = []
+    for row in results:
+        row_dict = dict(row)
+        # Map our DB 'id' to the schema's 'place_id'
+        if "id" in row_dict:
+            row_dict["place_id"] = row_dict.pop("id")
+        candidates.append(Candidate(**row_dict))
+    return candidates
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +83,7 @@ def rank_and_select(
 # ---------------------------------------------------------------------------
 
 def get_mock_recommendation(request: RecommendationRequest) -> RecommendationResponse:
-    candidates = get_fake_candidates()
+    candidates = get_real_candidates(request.query)
 
     visit_date = request.visit_date or date.today()
     visit_time = request.visit_time or time(10, 0)
@@ -126,13 +100,18 @@ def get_mock_recommendation(request: RecommendationRequest) -> RecommendationRes
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    test_request = RecommendationRequest(
-        query="quiet ancient temples in Luxor",
-        city="Luxor",
-        budget_egp=300,
-        visit_date=date(2026, 7, 5),
-        visit_time=time(10, 0),
-    )
-    response = get_mock_recommendation(test_request)
-    for stop in response.itinerary:
-        print(stop)
+    from backend.app.db import pool
+    pool.open()
+    try:
+        test_request = RecommendationRequest(
+            query="quiet ancient temples in Luxor",
+            city="Luxor",
+            budget_egp=300,
+            visit_date=date(2026, 7, 5),
+            visit_time=time(10, 0),
+        )
+        response = get_mock_recommendation(test_request)
+        for stop in response.itinerary:
+            print(stop)
+    finally:
+        pool.close()

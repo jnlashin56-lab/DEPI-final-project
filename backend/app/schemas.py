@@ -16,6 +16,12 @@ from datetime import date, time
 # Retrieval API Schemas
 # ---------------------------------------------------------------------------
 
+class RecommendRequest(BaseModel):
+    user_input: str
+
+class BookingChatRequest(BaseModel):
+    user_input: str
+
 class SearchRequest(BaseModel):
     query: str
     category: str | None = None
