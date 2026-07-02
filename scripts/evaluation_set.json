@@ -1,0 +1,177 @@
+[
+  {
+    "id": 1,
+    "query": "I have 3 hours and 300 EGP to see ancient temples in Luxor",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["temple", "luxor", "karnak"],
+    "language": "en"
+  },
+  {
+    "id": 2,
+    "query": "Show me cheap museums in Cairo for a family",
+    "expected_categories": ["museum"],
+    "expected_keywords": ["museum", "cairo"],
+    "language": "en"
+  },
+  {
+    "id": 3,
+    "query": "I want to visit Islamic architecture in old Cairo, budget 200 EGP",
+    "expected_categories": ["religious", "historical"],
+    "expected_keywords": ["mosque", "islamic", "cairo"],
+    "language": "en"
+  },
+  {
+    "id": 4,
+    "query": "Nature and desert places near Aswan, half a day",
+    "expected_categories": ["natural"],
+    "expected_keywords": ["aswan", "desert", "nature", "island"],
+    "language": "en"
+  },
+  {
+    "id": 5,
+    "query": "Best pyramids and sphinx tour, morning visit",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["pyramid", "giza", "sphinx"],
+    "language": "en"
+  },
+  {
+    "id": 6,
+    "query": "Coastal places and beaches in Alexandria",
+    "expected_categories": ["coastal", "historical"],
+    "expected_keywords": ["alexandria", "sea", "coast", "beach"],
+    "language": "en"
+  },
+  {
+    "id": 7,
+    "query": "عايز أزور معابد في الأقصر الصبح",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["معبد", "الأقصر", "temple", "luxor"],
+    "language": "ar"
+  },
+  {
+    "id": 8,
+    "query": "أماكن تاريخية رخيصة في القاهرة",
+    "expected_categories": ["historical", "museum"],
+    "expected_keywords": ["القاهرة", "cairo", "تاريخ"],
+    "language": "ar"
+  },
+  {
+    "id": 9,
+    "query": "I want to see Coptic churches and old monasteries",
+    "expected_categories": ["religious"],
+    "expected_keywords": ["coptic", "church", "monastery"],
+    "language": "en"
+  },
+  {
+    "id": 10,
+    "query": "Markets and bazaars for souvenirs in Cairo",
+    "expected_categories": ["market"],
+    "expected_keywords": ["market", "bazaar", "khan", "souvenirs"],
+    "language": "en"
+  },
+  {
+    "id": 11,
+    "query": "I have 500 EGP and want to see famous tombs in the Valley of the Kings",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["valley", "kings", "tomb", "luxor"],
+    "language": "en"
+  },
+  {
+    "id": 12,
+    "query": "Relaxing day at the Nile, no crowds",
+    "expected_categories": ["natural", "coastal"],
+    "expected_keywords": ["nile", "river", "relax"],
+    "language": "en"
+  },
+  {
+    "id": 13,
+    "query": "أفضل الأماكن الطبيعية في أسوان",
+    "expected_categories": ["natural"],
+    "expected_keywords": ["أسوان", "طبيعة", "aswan"],
+    "language": "ar"
+  },
+  {
+    "id": 14,
+    "query": "Show me temples built by Ramses II",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["ramses", "temple", "abu simbel"],
+    "language": "en"
+  },
+  {
+    "id": 15,
+    "query": "Budget trip under 100 EGP, historical sites",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["historical", "cheap", "budget"],
+    "language": "en"
+  },
+  {
+    "id": 16,
+    "query": "Where can I see mummies and pharaonic artifacts?",
+    "expected_categories": ["museum"],
+    "expected_keywords": ["mummy", "pharaonic", "museum", "artifact"],
+    "language": "en"
+  },
+  {
+    "id": 17,
+    "query": "مساجد تاريخية في القاهرة القديمة",
+    "expected_categories": ["religious"],
+    "expected_keywords": ["مسجد", "القاهرة", "mosque"],
+    "language": "ar"
+  },
+  {
+    "id": 18,
+    "query": "Family-friendly places in Hurghada",
+    "expected_categories": ["coastal", "natural"],
+    "expected_keywords": ["hurghada", "family", "beach", "sea"],
+    "language": "en"
+  },
+  {
+    "id": 19,
+    "query": "I want to see the Citadel and Mohamed Ali Mosque",
+    "expected_categories": ["historical", "religious"],
+    "expected_keywords": ["citadel", "mohamed ali", "mosque"],
+    "language": "en"
+  },
+  {
+    "id": 20,
+    "query": "Quick 2-hour visit to something interesting near downtown Cairo",
+    "expected_categories": ["museum", "historical"],
+    "expected_keywords": ["cairo", "downtown"],
+    "language": "en"
+  },
+  {
+    "id": 21,
+    "query": "أماكن سياحية على البحر في الإسكندرية",
+    "expected_categories": ["coastal"],
+    "expected_keywords": ["الإسكندرية", "بحر", "alexandria"],
+    "language": "ar"
+  },
+  {
+    "id": 22,
+    "query": "Ancient Egyptian obelisks and columns",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["obelisk", "column", "ancient"],
+    "language": "en"
+  },
+  {
+    "id": 23,
+    "query": "Afternoon visit to Philae Temple in Aswan",
+    "expected_categories": ["historical"],
+    "expected_keywords": ["philae", "temple", "aswan"],
+    "language": "en"
+  },
+  {
+    "id": 24,
+    "query": "Art galleries and modern museums in Cairo",
+    "expected_categories": ["museum"],
+    "expected_keywords": ["art", "gallery", "modern", "museum"],
+    "language": "en"
+  },
+  {
+    "id": 25,
+    "query": "حديقة أو أماكن طبيعية للتنزه مع الأطفال",
+    "expected_categories": ["natural"],
+    "expected_keywords": ["حديقة", "أطفال", "park", "garden"],
+    "language": "ar"
+  }
+]

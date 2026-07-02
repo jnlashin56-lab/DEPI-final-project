@@ -1,85 +1,44 @@
 """
-Crowd Estimator — Phase 1 (rule-based, no ML).
+Crowd Estimator — Phase 2 (Machine Learning).
 
-Combines a base crowd level per category with three multipliers
-(time of day, day of week, season) into a single 0-1 crowd_score,
-then buckets that score into "low" / "medium" / "high".
-
-This is intentionally simple and fully explainable — every number
-here is a hand-picked constant you can point to and justify in a
-defense, not a learned weight.
+Loads a pre-trained XGBoost model to predict crowd scores based on
+features: month, day_of_week, hour, and category.
 """
 
 from datetime import date, time
+import os
+import xgboost as xgb
+import pandas as pd
+import logging
 from backend.app.schemas import CrowdEstimateRequest, CrowdEstimateResponse
 
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Step 1: base crowd level per category
-# Tune these as you learn more about your actual dataset's categories.
+# ML Model Loading
 # ---------------------------------------------------------------------------
+_model = None
 
-BASE_CROWD_BY_CATEGORY = {
-    "historical": 0.6,   # major ancient sites — generally busy
-    "museum": 0.4,
-    "religious": 0.5,
-    "natural": 0.3,      # desert/nature sites — generally quieter
-    "coastal": 0.35,
-    "market": 0.55,
+def get_crowd_model():
+    global _model
+    if _model is None:
+        model_path = os.path.join(os.path.dirname(__file__), "models", "xgboost_crowd.json")
+        try:
+            _model = xgb.XGBRegressor()
+            _model.load_model(model_path)
+            logger.info("Loaded XGBoost crowd model.")
+        except Exception as e:
+            logger.error(f"Failed to load XGBoost crowd model: {e}")
+            _model = None
+    return _model
+
+cat_mapping = {
+    "historical": 0, "museum": 1, "religious": 2, "natural": 3, 
+    "coastal": 4, "market": 5, "other": 6
 }
-DEFAULT_BASE_CROWD = 0.4  # fallback for any category not listed above
-
-
-def get_base_crowd(category: str) -> float:
-    return BASE_CROWD_BY_CATEGORY.get(category.lower(), DEFAULT_BASE_CROWD)
-
 
 # ---------------------------------------------------------------------------
-# Step 2: time-of-day multiplier
-# Midday is busiest; early morning and late afternoon are quieter.
-# ---------------------------------------------------------------------------
-
-def time_of_day_multiplier(visit_time: time) -> float:
-    hour = visit_time.hour
-    if 11 <= hour < 15:
-        return 1.3   # midday peak
-    elif 9 <= hour < 11 or 15 <= hour < 17:
-        return 1.0   # normal
-    else:
-        return 0.7   # early morning / late afternoon — quieter
-
-
-# ---------------------------------------------------------------------------
-# Step 3: day-of-week multiplier
-# Friday/Saturday are the tourist-heavy weekend in Egypt.
-# ---------------------------------------------------------------------------
-
-def day_of_week_multiplier(visit_date: date) -> float:
-    weekday = visit_date.weekday()  # Monday=0 ... Sunday=6
-    if weekday in (4, 5):  # Friday, Saturday
-        return 1.2
-    return 1.0
-
-
-# ---------------------------------------------------------------------------
-# Step 4: season multiplier
-# Oct-Apr is Egypt's tourist season -> busier for most sites.
-# Summer is quieter for desert/outdoor sites, busier for coastal ones.
-# ---------------------------------------------------------------------------
-
-def season_multiplier(visit_date: date, category: str) -> float:
-    month = visit_date.month
-    is_tourist_season = month in (10, 11, 12, 1, 2, 3, 4)
-
-    if category.lower() == "coastal":
-        # coastal sites flip: busier in summer, quieter in tourist season
-        return 1.2 if not is_tourist_season else 0.9
-
-    return 1.3 if is_tourist_season else 0.8
-
-
-# ---------------------------------------------------------------------------
-# Step 5: combine into a score, then bucket into low/medium/high
+# ML Inference Pipeline
 # ---------------------------------------------------------------------------
 
 def score_to_label(score: float) -> str:
@@ -91,23 +50,36 @@ def score_to_label(score: float) -> str:
 
 
 def estimate_crowd(request: CrowdEstimateRequest) -> CrowdEstimateResponse:
-    base = get_base_crowd(request.category)
-    tod_mult = time_of_day_multiplier(request.visit_time)
-    dow_mult = day_of_week_multiplier(request.visit_date)
-    season_mult = season_multiplier(request.visit_date, request.category)
-
-    raw_score = base * tod_mult * dow_mult * season_mult
-    crowd_score = max(0.0, min(1.0, raw_score))  # clamp to [0, 1]
-
+    model = get_crowd_model()
+    
+    # Feature extraction
+    month = request.visit_date.month
+    day_of_week = request.visit_date.weekday()
+    hour = request.visit_time.hour
+    category_encoded = cat_mapping.get(request.category.lower(), 6)
+    
+    if model is not None:
+        # Create single row dataframe matching training features
+        df = pd.DataFrame([{
+            "month": month,
+            "day_of_week": day_of_week,
+            "hour": hour,
+            "category_encoded": category_encoded
+        }])
+        
+        # Inference
+        raw_pred = float(model.predict(df)[0])
+        crowd_score = max(0.0, min(1.0, raw_pred))
+    else:
+        # Fallback if model fails to load
+        crowd_score = 0.5
+        
     label = score_to_label(crowd_score)
 
     explanation = (
-        f"{request.category.capitalize()} sites have a base crowd level of "
-        f"{base:.2f}. Visiting at {request.visit_time.strftime('%H:%M')} "
-        f"({'peak' if tod_mult > 1 else 'off-peak'} hours) and on a "
-        f"{'weekend' if dow_mult > 1 else 'weekday'} during "
-        f"{'tourist' if season_mult > 1 and request.category.lower() != 'coastal' else 'off-peak'} "
-        f"season results in a predicted crowd level of {label}."
+        f"Our XGBoost ML model analyzed the historical patterns for {request.category} sites "
+        f"in month {month}, day {day_of_week}, at {hour}:00, and predicted a "
+        f"{label} crowd density (confidence score: {crowd_score:.2f})."
     )
 
     return CrowdEstimateResponse(
@@ -116,12 +88,6 @@ def estimate_crowd(request: CrowdEstimateRequest) -> CrowdEstimateResponse:
         explanation=explanation,
     )
 
-
-# ---------------------------------------------------------------------------
-# Quick manual test — run this file directly to check it works,
-# without needing main.py or a running server:
-#   python -m backend.app.crowd
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     test_request = CrowdEstimateRequest(
