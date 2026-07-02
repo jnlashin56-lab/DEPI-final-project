@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "cultural-recommender": {
+      "command": "C:\\Users\\X1\\Downloads\\Depi_project\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "mcp_server.server"
+      ],
+      "cwd": "C:\\Users\\X1\\Downloads\\Depi_project",
+      "env": {
+        "DATABASE_URL": "postgresql://cultural_user:cultural_password@localhost:5432/cultural_recommender"
+      }
+    }
+  }
+}
