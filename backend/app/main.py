@@ -12,6 +12,7 @@ from backend.app.retrieval import get_model, get_model_name, search_places
 from backend.app.orchestrator import run_orchestration
 from backend.app.agents.booking_agent import handle_booking_chat
 from backend.app.bookings import dispatch_action
+from backend.app.admin import router as admin_router
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(admin_router)
 
 @app.get("/health", response_model=HealthResponse)
 def health_check():

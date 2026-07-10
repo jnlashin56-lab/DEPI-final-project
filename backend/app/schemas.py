@@ -161,3 +161,115 @@ class BookingAction(BaseModel):
     visit_time: Optional[str] = None
     visitor_name: Optional[str] = None
     visitor_count: Optional[int] = None
+
+
+# ---------------------------------------------------------------------------
+# Admin Panel Schemas
+# ---------------------------------------------------------------------------
+
+class AdminLogin(BaseModel):
+    username: str
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+# Places admin
+class PlaceCreate(BaseModel):
+    name: str
+    name_ar: Optional[str] = None
+    category: Optional[str] = None
+    category_ar: Optional[str] = None
+    description: Optional[str] = None
+    description_ar: Optional[str] = None
+    price_egp: Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class PlaceUpdate(PlaceCreate):
+    pass
+
+class PlaceAdmin(BaseModel):
+    id: int
+    source_place_id: Optional[int] = None
+    name: str
+    name_ar: Optional[str] = None
+    category: Optional[str] = None
+    category_ar: Optional[str] = None
+    description: Optional[str] = None
+    description_ar: Optional[str] = None
+    price_egp: Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    has_embedding: bool = False
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class PlaceListResponse(BaseModel):
+    places: List[PlaceAdmin]
+    total: int
+    page: int
+    page_size: int
+
+# Ticket prices admin
+class TicketPriceAdmin(BaseModel):
+    id: int
+    site_name: str
+    governorate: Optional[str] = None
+    heritage_type: Optional[str] = None
+    egyptian_egp: Optional[float] = None
+    egyptian_student_egp: Optional[float] = None
+    foreign_egp: Optional[float] = None
+    foreign_student_egp: Optional[float] = None
+    visiting_hours: Optional[str] = None
+
+class TicketPriceUpdate(BaseModel):
+    egyptian_egp: Optional[float] = None
+    egyptian_student_egp: Optional[float] = None
+    foreign_egp: Optional[float] = None
+    foreign_student_egp: Optional[float] = None
+    visiting_hours: Optional[str] = None
+
+# Bookings admin
+class BookingAdmin(BaseModel):
+    id: int
+    place_id: int
+    place_name: Optional[str] = None
+    visitor_name: str
+    visitor_type: str
+    visitor_count: int
+    visit_date: date
+    visit_time: Optional[time] = None
+    status: str
+    total_price_egp: Optional[float] = None
+    confirmation_code: str
+    created_at: Optional[str] = None
+
+# Crowd profiles admin
+class CrowdProfileAdmin(BaseModel):
+    place_id: int
+    place_name: Optional[str] = None
+    base_crowd_level: str
+    peak_hours: Optional[List[str]] = None
+    peak_season_months: Optional[List[int]] = None
+    is_outdoor: bool = True
+    notes: Optional[str] = None
+
+class CrowdProfileUpdate(BaseModel):
+    base_crowd_level: str
+    peak_hours: Optional[List[str]] = None
+    peak_season_months: Optional[List[int]] = None
+    is_outdoor: Optional[bool] = None
+    notes: Optional[str] = None
+
+# Analytics
+class AnalyticsResponse(BaseModel):
+    total_bookings: int
+    total_revenue: float
+    active_places: int
+    places_with_embeddings: int
+    top_booked_places: List[Dict[str, Any]]
+    bookings_by_status: Dict[str, int]
+    recent_bookings: List[Dict[str, Any]]
+
