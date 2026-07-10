@@ -4,6 +4,7 @@ pydantic==2.6.1
 sentence-transformers==2.5.1
 psycopg[binary,pool]==3.1.18
 python-dotenv==1.0.1
+requests
 huggingface-hub
 json-repair
 xgboost

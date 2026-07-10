@@ -11,15 +11,18 @@ logger = logging.getLogger(__name__)
 
 import time
 
-# Azure OpenAI Configuration
-AZURE_ENDPOINT = "https://yi30405251603817-3079-resource.services.ai.azure.com"
-AZURE_DEPLOYMENT = "gpt-5-mini"
+# Azure OpenAI Configuration (override via env vars in production)
+AZURE_ENDPOINT = os.getenv(
+    "AZURE_OPENAI_ENDPOINT",
+    "https://yi30405251603817-3079-resource.services.ai.azure.com",
+)
+AZURE_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
 AZURE_API_KEY = os.getenv("AZURE_API_KEY")
-AZURE_API_VERSION = "2025-04-01-preview"
+AZURE_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
 DEFAULT_MODEL = AZURE_DEPLOYMENT
 
 def _call_azure_api(prompt: str, model: str, max_tokens: int, temperature: float, retries: int = 3) -> str:
-    url = f"{AZURE_ENDPOINT}/openai/deployments/{AZURE_DEPLOYMENT}/chat/completions?api-version={AZURE_API_VERSION}"
+    url = f"{AZURE_ENDPOINT.rstrip('/')}/openai/deployments/{AZURE_DEPLOYMENT}/chat/completions?api-version={AZURE_API_VERSION}"
     headers = {
         "api-key": AZURE_API_KEY,
         "Content-Type": "application/json"

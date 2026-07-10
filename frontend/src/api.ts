@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE = 'http://127.0.0.1:8000';
+import { API_BASE } from './config';
 
 export interface ItineraryStop {
   place_id: number;
