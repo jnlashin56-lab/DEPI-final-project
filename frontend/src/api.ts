@@ -12,6 +12,7 @@ export interface ItineraryStop {
   predicted_crowd: string;
   crowd_score: number;
   story: string;
+  day?: number;
 }
 
 export interface RecommendationResponse {

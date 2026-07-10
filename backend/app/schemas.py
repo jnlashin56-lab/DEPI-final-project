@@ -19,6 +19,8 @@ from datetime import date, time
 class RecommendRequest(BaseModel):
     user_input: str
 
+from typing import List, Dict, Any, Optional
+
 class BookingChatRequest(BaseModel):
     user_input: str
 
@@ -113,10 +115,12 @@ class RecommendationRequest(BaseModel):
     crowd_tolerance: Optional[str] = None  # "low" | "medium" | "high"
     visit_date: Optional[date] = None
     visit_time: Optional[time] = None
+    num_days: Optional[int] = None
 
 
 class ItineraryStop(ScoredCandidate):
     story: Optional[str] = None  # filled in later by the Story Generator
+    day: int = 1
 
 
 class RecommendationResponse(BaseModel):
@@ -153,7 +157,7 @@ class BookingResponse(BaseModel):
 class BookingAction(BaseModel):
     action: str  # "check_availability" | "create_booking" | "confirm_booking"
     place_id: int
-    visit_date: Optional[date] = None
-    visit_time: Optional[time] = None
+    visit_date: Optional[str] = None
+    visit_time: Optional[str] = None
     visitor_name: Optional[str] = None
     visitor_count: Optional[int] = None

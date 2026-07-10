@@ -6,6 +6,10 @@ from psycopg.rows import dict_row
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 DEFAULT_DATABASE_URL = (
     "postgresql://cultural_user:cultural_password@localhost:5432/cultural_recommender"
 )

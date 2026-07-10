@@ -270,6 +270,22 @@ h1, h2, h3, h4, h5, h6 {
   color: #000;
 }
 
+.day-group {
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.day-header {
+  font-size: 2rem;
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  font-family: 'Outfit', sans-serif;
+}
+
 /* Booking Modal */
 .modal-overlay {
   position: fixed;

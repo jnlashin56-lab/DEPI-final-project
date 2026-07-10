@@ -22,6 +22,7 @@ Extract the following fields (if mentioned, otherwise leave them null):
 - "crowd_tolerance": Must be exactly one of: "low", "medium", "high". Default to null if not mentioned.
 - "visit_date": A date in YYYY-MM-DD format if they mention when they are going.
 - "visit_time": A time in HH:MM format if they mention a specific time of day.
+- "num_days": How many days they are planning (extract as an integer). Default to 1 if not mentioned.
 
 User input: "{user_input}"
 """

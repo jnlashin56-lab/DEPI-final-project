@@ -20,9 +20,9 @@ from backend.app.retrieval import search_places
 
 logger = logging.getLogger(__name__)
 
-def get_real_candidates(query: str, category: str | None = None) -> List[Candidate]:
+def get_real_candidates(query: str, category: str | None = None, limit: int = 30) -> List[Candidate]:
     """Wraps retrieval to map DB rows to the Candidate schema."""
-    results = search_places(query_text=query, category=category, limit=30)
+    results = search_places(query_text=query, category=category, limit=limit)
     candidates = []
     for row in results:
         row_dict = dict(row)
@@ -69,13 +69,16 @@ def run_orchestration(user_input: str) -> RecommendationResponse:
     request = parse_user_preferences(user_input)
     latency["preference_agent_ms"] = round((_time.perf_counter() - t1) * 1000)
     
+    logger.info(f"Parsed preferences: query={request.query}, num_days={request.num_days}, city={request.city}, budget={request.budget_egp}")
+    
     # Fill defaults if missing
     visit_date = request.visit_date or datetime.date.today()
     visit_time = request.visit_time or datetime.time(10, 0)
+    num_days = request.num_days or 1
     
     # 2. Retrieval (pgvector)
     t2 = _time.perf_counter()
-    candidates = get_real_candidates(request.query)
+    candidates = get_real_candidates(request.query, limit=30 * num_days)
     latency["retrieval_ms"] = round((_time.perf_counter() - t2) * 1000)
     
     # 3. Crowd Estimator (XGBoost)
@@ -85,7 +88,7 @@ def run_orchestration(user_input: str) -> RecommendationResponse:
     
     # 4. Recommender Agent (LLM)
     t4 = _time.perf_counter()
-    itinerary = rank_and_select_candidates(scored, request, max_stops=3)
+    itinerary = rank_and_select_candidates(scored, request, max_stops=3 * num_days)
     latency["recommender_agent_ms"] = round((_time.perf_counter() - t4) * 1000)
     
     # 5. Story Generator (LLM)
