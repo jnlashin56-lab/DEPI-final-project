@@ -12,6 +12,7 @@ from backend.app.retrieval import get_model, get_model_name, search_places
 from backend.app.orchestrator import run_orchestration
 from backend.app.agents.booking_agent import handle_booking_chat
 from backend.app.bookings import dispatch_action
+from backend.app.admin import router as admin_router
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +21,24 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up FastAPI application...")
     logger.info("Opening database connection pool...")
-    pool.open()
+    try:
+        pool.open(wait=False)
+        logger.info("Database pool opened (connections establishing in background).")
+    except Exception as e:
+        logger.error(f"Failed to open database pool: {e}")
     
-    logger.info(f"Loading embedding model: {get_model_name()}...")
-    get_model()  # Pre-load the model
-    logger.info("Model loaded successfully.")
+    logger.info(f"Embedding model configured: {get_model_name()} (loaded on first request)")
+    logger.info("Application startup complete.")
     
     yield
     
     # Shutdown
     logger.info("Shutting down FastAPI application...")
     logger.info("Closing database connection pool...")
-    pool.close()
+    try:
+        pool.close()
+    except Exception:
+        pass
 
 app = FastAPI(title="Cultural Recommender API", lifespan=lifespan)
 
@@ -42,6 +49,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(admin_router)
 
 @app.get("/health", response_model=HealthResponse)
 def health_check():

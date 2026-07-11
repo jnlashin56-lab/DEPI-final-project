@@ -20,8 +20,8 @@ The JSON MUST have this structure:
 {{
   "action": "check_availability" | "create_booking" | "confirm_booking",
   "place_id": integer (if known, or 0 if unknown),
-  "visit_date": "YYYY-MM-DD" (if mentioned),
-  "visit_time": "HH:MM" (if mentioned),
+  "visit_date": string, strictly "YYYY-MM-DD" format (convert what the user says, e.g. "20/7/2026" -> "2026-07-20"),
+  "visit_time": string, strictly 24-hour "HH:MM" format (convert what the user says, e.g. "2 pm" -> "14:00"),
   "visitor_name": string (if mentioned),
   "visitor_count": integer (if mentioned)
 }}

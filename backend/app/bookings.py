@@ -1,9 +1,32 @@
-from datetime import date, time
+from datetime import date, time, datetime
 from typing import Optional
 import psycopg
 
 from backend.app.schemas import BookingRequest, BookingResponse, BookingAction
 from backend.app.db import pool
+
+# ---------------------------------------------------------------------------
+# Date / Time Parsers
+# ---------------------------------------------------------------------------
+
+def parse_date(date_str: str) -> Optional[date]:
+    if not date_str: return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            pass
+    return None
+
+def parse_time(time_str: str) -> Optional[time]:
+    if not time_str: return None
+    time_str = time_str.strip().lower()
+    for fmt in ("%H:%M", "%I %p", "%I%p", "%I:%M %p", "%I:%M%p"):
+        try:
+            return datetime.strptime(time_str, fmt).time()
+        except ValueError:
+            pass
+    return None
 
 # ---------------------------------------------------------------------------
 # check_availability — action="check_availability"
@@ -30,18 +53,21 @@ def check_availability(place_id: int, visit_date: date, visit_time: time) -> dic
 def create_booking(request: BookingRequest, price_egp: Optional[float] = None) -> BookingResponse:
     total_price = (price_egp * request.visitor_count) if price_egp else None
     
+    import uuid
+    conf_code = str(uuid.uuid4())[:8].upper()
+
     with pool.connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
             cur.execute(
                 """
                 INSERT INTO bookings (
-                    place_id, visitor_name, visitor_count, visit_date, visit_time, status, total_price_egp
-                ) VALUES (%s, %s, %s, %s, %s, 'pending', %s)
-                RETURNING booking_id;
+                    place_id, visitor_name, visitor_count, visit_date, visit_time, status, total_price_egp, visitor_type, confirmation_code
+                ) VALUES (%s, %s, %s, %s, %s, 'pending', %s, 'foreign', %s)
+                RETURNING id;
                 """,
-                (request.place_id, request.visitor_name, request.visitor_count, request.visit_date, request.visit_time, total_price)
+                (request.place_id, request.visitor_name, request.visitor_count, request.visit_date, request.visit_time, total_price, conf_code)
             )
-            booking_id = cur.fetchone()["booking_id"]
+            booking_id = cur.fetchone()["id"]
             conn.commit()
 
     return BookingResponse(
@@ -69,7 +95,7 @@ def confirm_booking(booking_id: int) -> BookingResponse:
                 """
                 UPDATE bookings 
                 SET status = 'confirmed'
-                WHERE booking_id = %s
+                WHERE id = %s
                 RETURNING *;
                 """,
                 (booking_id,)
@@ -79,7 +105,7 @@ def confirm_booking(booking_id: int) -> BookingResponse:
             
     if row:
         return BookingResponse(
-            booking_id=row["booking_id"],
+            booking_id=row["id"],
             status=row["status"],
             place_id=row["place_id"],
             visitor_name=row["visitor_name"],
@@ -109,15 +135,20 @@ def confirm_booking(booking_id: int) -> BookingResponse:
 # ---------------------------------------------------------------------------
 
 def dispatch_action(action: BookingAction) -> dict:
+    v_date = parse_date(action.visit_date) if action.visit_date else None
+    v_time = parse_time(action.visit_time) if action.visit_time else None
+
     if action.action == "check_availability":
-        return check_availability(action.place_id, action.visit_date, action.visit_time)
+        if not v_date or not v_time:
+            return {"status": "pending_info", "message": "Please provide a valid date (e.g. YYYY-MM-DD) and time (e.g. HH:MM)."}
+        return check_availability(action.place_id, v_date, v_time)
 
     elif action.action == "create_booking":
         missing = []
         if not action.visitor_name: missing.append("name")
         if not action.visitor_count: missing.append("number of tickets")
-        if not action.visit_date: missing.append("date")
-        if not action.visit_time: missing.append("time")
+        if not v_date: missing.append("date (e.g. YYYY-MM-DD)")
+        if not v_time: missing.append("time (e.g. HH:MM)")
         
         if missing:
             return {"status": "pending_info", "message": f"Please provide your: {', '.join(missing)}."}
@@ -126,8 +157,8 @@ def dispatch_action(action: BookingAction) -> dict:
             place_id=action.place_id,
             visitor_name=action.visitor_name,
             visitor_count=action.visitor_count,
-            visit_date=action.visit_date,
-            visit_time=action.visit_time,
+            visit_date=v_date,
+            visit_time=v_time,
         )
         return create_booking(request).model_dump()
 
