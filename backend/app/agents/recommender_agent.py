@@ -1,6 +1,9 @@
 from typing import List
+import logging
 from backend.app.llm_client import generate_json
 from backend.app.schemas import ScoredCandidate, RecommendationRequest, ItineraryStop
+
+logger = logging.getLogger(__name__)
 
 def rank_and_select_candidates(
     candidates: List[ScoredCandidate], 
@@ -35,6 +38,7 @@ User Preferences:
 - Interests: {request.interests}
 - Crowd Tolerance: {request.crowd_tolerance}
 - Available Hours: {request.available_hours}
+- Days: {request.num_days or 1}
 
 Candidates:
 {candidates_json}
@@ -43,46 +47,57 @@ Instructions:
 1. Select up to {max_stops} places that best fit the user's preferences.
 2. Consider the budget and crowd tolerance (if specified).
 3. Order them logically for an itinerary.
-4. Output a JSON array containing ONLY the selected `place_id`s in order.
+4. Output a JSON array containing objects with `place_id` and `day` (day 1 to {request.num_days or 1}).
 
 Example output:
-[10, 45, 123]
+[
+  {{"place_id": 10, "day": 1}},
+  {{"place_id": 45, "day": 1}},
+  {{"place_id": 123, "day": 2}}
+]
 """
+
     
-    response_data = generate_json(prompt, max_new_tokens=200)
+    response_data = generate_json(prompt, max_new_tokens=500)
     
-    selected_ids = []
+    logger.info(f"Recommender LLM response: {response_data}")
+    
+    selected_items = []
     if isinstance(response_data, dict):
         # Depending on how json_repair formats the list, extract it
         if "data" in response_data:
-            selected_ids = response_data["data"]
+            selected_items = response_data["data"]
         else:
-            # Maybe it output {"place_ids": [1,2,3]}
+            # Maybe it output {"places": [...]}
             for key, val in response_data.items():
                 if isinstance(val, list):
-                    selected_ids = val
+                    selected_items = val
                     break
     elif isinstance(response_data, list):
-        selected_ids = response_data
+        selected_items = response_data
         
-    # Ensure they are integers
-    try:
-        selected_ids = [int(i) for i in selected_ids]
-    except (ValueError, TypeError):
-        # Fallback if the LLM output something weird
-        selected_ids = [c.place_id for c in candidates[:max_stops]]
-        
-    # Filter and order candidates based on the LLM's selection
     candidate_dict = {c.place_id: c for c in candidates}
-    
     itinerary = []
-    for pid in selected_ids:
-        if pid in candidate_dict:
-            c = candidate_dict[pid]
-            itinerary.append(ItineraryStop(**c.model_dump(), story=None))
+    
+    try:
+        for item in selected_items:
+            if isinstance(item, dict) and "place_id" in item:
+                pid = int(item["place_id"])
+                day = int(item.get("day", 1))
+                if pid in candidate_dict:
+                    c = candidate_dict[pid]
+                    itinerary.append(ItineraryStop(**c.model_dump(), story=None, day=day))
+            elif isinstance(item, int) or isinstance(item, str):
+                pid = int(item)
+                if pid in candidate_dict:
+                    c = candidate_dict[pid]
+                    itinerary.append(ItineraryStop(**c.model_dump(), story=None, day=1))
+    except (ValueError, TypeError):
+        pass
             
     # Fallback if the LLM failed to select anything valid
     if not itinerary:
-        itinerary = [ItineraryStop(**c.model_dump(), story=None) for c in candidates[:max_stops]]
+        itinerary = [ItineraryStop(**c.model_dump(), story=None, day=1) for c in candidates[:max_stops]]
+
         
     return itinerary[:max_stops]

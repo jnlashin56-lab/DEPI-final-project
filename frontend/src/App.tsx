@@ -62,7 +62,10 @@ function App() {
     setBookingLoading(true)
 
     try {
-      const response = await chatBooking(`Place: ${bookingPlace?.name}. User says: ${userMsg}`)
+      const historyStr = chatMessages.map(m => `${m.role === 'bot' ? 'Assistant' : 'User'}: ${m.text}`).join('\n')
+      const fullContext = `Place ID: ${bookingPlace?.place_id}. Place: ${bookingPlace?.name}.\nChat History:\n${historyStr}\nUser: ${userMsg}`
+      
+      const response = await chatBooking(fullContext)
       setChatMessages(prev => [...prev, { 
         role: 'bot', 
         text: response.result?.message || (lang === 'ar' ? 'جاري معالجة طلبك...' : 'Processing your request...') 
@@ -117,37 +120,56 @@ function App() {
 
       {error && <div style={{color: '#f87171', textAlign: 'center', marginBottom: '2rem'}}>{error}</div>}
 
-      {stops.length > 0 && (
-        <div className="itinerary-list">
-          {stops.map((stop, idx) => (
-            <div key={idx} className="stop-item glass-panel" style={{animationDelay: `${idx * 0.2}s`}}>
-              <div className="stop-number">{idx + 1}</div>
-              <div className="stop-content">
-                <div className="stop-header">
-                  <div>
-                    <h2 className="stop-title">{lang === 'ar' && stop.name_ar ? stop.name_ar : stop.name}</h2>
-                    <span className="stop-category">{stop.category}</span>
+      {stops.length > 0 && (() => {
+        const groupedStops = stops.reduce((acc, stop) => {
+          const day = stop.day || 1;
+          if (!acc[day]) acc[day] = [];
+          acc[day].push(stop);
+          return acc;
+        }, {} as Record<number, ItineraryStop[]>);
+        const hasMultipleDays = Object.keys(groupedStops).length > 1;
+
+        return (
+          <div className="itinerary-list">
+            {Object.entries(groupedStops).map(([day, dayStops]) => (
+              <div key={`day-${day}`} className="day-group">
+                {hasMultipleDays && (
+                  <h2 className="day-header">
+                    {lang === 'ar' ? `اليوم ${day}` : `Day ${day}`}
+                  </h2>
+                )}
+                {dayStops.map((stop, idx) => (
+                  <div key={idx} className="stop-item glass-panel" style={{animationDelay: `${idx * 0.2}s`}}>
+                    <div className="stop-number">{idx + 1}</div>
+                    <div className="stop-content">
+                      <div className="stop-header">
+                        <div>
+                          <h2 className="stop-title">{lang === 'ar' && stop.name_ar ? stop.name_ar : stop.name}</h2>
+                          <span className="stop-category">{stop.category}</span>
+                        </div>
+                        <div className="stop-meta">
+                          <span className="badge price">
+                            <Banknote size={14} /> {stop.price_egp ? `${stop.price_egp} EGP` : (lang === 'ar' ? 'مجاني / متفاوت' : 'Free / Varies')}
+                          </span>
+                          <span className={`badge crowd-${stop.predicted_crowd}`}>
+                            <Users size={14} /> {lang === 'ar' ? 'الازدحام:' : 'Crowd:'} {stop.predicted_crowd}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <p className="story-text">"{stop.story}"</p>
+                      
+                      <button className="book-btn" onClick={() => openBooking(stop)}>
+                        <Ticket size={16} /> {lang === 'ar' ? 'حجز التذاكر' : 'Book Tickets'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="stop-meta">
-                    <span className="badge price">
-                      <Banknote size={14} /> {stop.price_egp ? `${stop.price_egp} EGP` : (lang === 'ar' ? 'مجاني / متفاوت' : 'Free / Varies')}
-                    </span>
-                    <span className={`badge crowd-${stop.predicted_crowd}`}>
-                      <Users size={14} /> {lang === 'ar' ? 'الازدحام:' : 'Crowd:'} {stop.predicted_crowd}
-                    </span>
-                  </div>
-                </div>
-                
-                <p className="story-text">"{stop.story}"</p>
-                
-                <button className="book-btn" onClick={() => openBooking(stop)}>
-                  <Ticket size={16} /> {lang === 'ar' ? 'حجز التذاكر' : 'Book Tickets'}
-                </button>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Booking Modal */}
       {bookingPlace && (
