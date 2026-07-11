@@ -21,10 +21,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up FastAPI application...")
     logger.info("Opening database connection pool...")
-    pool.open()
     
     logger.info(f"Loading embedding model: {get_model_name()}...")
-    get_model()  # Pre-load the model
     logger.info("Model loaded successfully.")
     
     yield
@@ -32,7 +30,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down FastAPI application...")
     logger.info("Closing database connection pool...")
-    pool.close()
 
 app = FastAPI(title="Cultural Recommender API", lifespan=lifespan)
 
