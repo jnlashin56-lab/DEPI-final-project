@@ -19,7 +19,6 @@ COPY backend/ backend/
 
 ARG EMBEDDING_MODEL=intfloat/multilingual-e5-base
 ENV EMBEDDING_MODEL=${EMBEDDING_MODEL}
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')"
 
 EXPOSE 8000
 
