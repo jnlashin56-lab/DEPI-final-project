@@ -21,17 +21,24 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up FastAPI application...")
     logger.info("Opening database connection pool...")
-    pool.open()
+    try:
+        pool.open(wait=False)
+        logger.info("Database pool opened (connections establishing in background).")
+    except Exception as e:
+        logger.error(f"Failed to open database pool: {e}")
     
-    logger.info(f"Loading embedding model: {get_model_name()}...")
-    logger.info("Model loaded successfully.")
+    logger.info(f"Embedding model configured: {get_model_name()} (loaded on first request)")
+    logger.info("Application startup complete.")
     
     yield
     
     # Shutdown
     logger.info("Shutting down FastAPI application...")
     logger.info("Closing database connection pool...")
-    pool.close()
+    try:
+        pool.close()
+    except Exception:
+        pass
 
 app = FastAPI(title="Cultural Recommender API", lifespan=lifespan)
 
